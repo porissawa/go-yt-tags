@@ -5,12 +5,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 )
 
 // Metadata structures the required fields to display to users
@@ -21,7 +21,6 @@ type Metadata struct {
 }
 
 func main() {
-	start := time.Now()
 	var wg sync.WaitGroup
 	metadataChannel := make(chan string)
 
@@ -31,9 +30,7 @@ func main() {
 	for res := range metadataChannel {
 		data = append(data, res)
 	}
-	duration := time.Since(start)
 	fmt.Println(data)
-	fmt.Println("Exection took", duration)
 }
 
 func fetchVideoTags(videoID string, channel chan string, wg *sync.WaitGroup, shouldCloseChan bool) {
@@ -78,7 +75,7 @@ func parseVideoMetadata(data []byte) Metadata {
 	}
 	videoTitle := strings.Replace(videoTitleMatch[7:len(videoTitleMatch)-18], "\"", "", -1)
 
-	// a video may not have any keywords
+	// a video might have no keywords
 	var keywords []string
 	kre := regexp.MustCompile(`keywords\":\[(.*?)\]`)
 	if len(kre.Find(data)) > 0 {
@@ -90,7 +87,7 @@ func parseVideoMetadata(data []byte) Metadata {
 
 	return Metadata{
 		ChannelName: channelName,
-		VideoTitle:  videoTitle,
+		VideoTitle:  html.UnescapeString(videoTitle),
 		Keywords:    keywords,
 	}
 }
